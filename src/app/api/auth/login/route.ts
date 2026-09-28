@@ -21,8 +21,13 @@ type Attempts = Map<string, { count: number; firstAt: number }>;
 const g = globalThis as typeof globalThis & { __loginAttempts?: Attempts };
 const attempts: Attempts = (g.__loginAttempts ??= new Map());
 
+// Detrás del proxy de Railway, X-Real-IP la pone el proxy. El primer valor de
+// X-Forwarded-For lo controla el cliente, así que se usa el último (el que agregó el proxy).
 function clientIp(request: Request): string {
-  return request.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'local';
+  const realIp = request.headers.get('x-real-ip')?.trim();
+  if (realIp) return realIp;
+  const forwarded = request.headers.get('x-forwarded-for')?.split(',').map((ip) => ip.trim()).filter(Boolean);
+  return forwarded?.at(-1) || 'local';
 }
 
 function isLocked(ip: string): boolean {

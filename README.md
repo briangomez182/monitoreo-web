@@ -20,7 +20,7 @@ Es una sola app **Next.js 16 (App Router, TypeScript)**: el frontend React (sist
 
 ## 1. Arranque
 
-Requisitos: Node.js 20 o superior.
+Requisitos: Node.js 22 o superior.
 
 ```bash
 npm install
@@ -165,7 +165,6 @@ monitoreo-web/
 ├── eslint.config.mjs
 ├── postcss.config.mjs          # Tailwind v4
 ├── public/                     # archivos estáticos
-├── borrarLuego-*/              # versión anterior Java/Docker (se puede borrar)
 └── src/
     ├── proxy.ts                # guardia de sesión: todo cerrado salvo /login
     ├── instrumentation.ts      # arranca el scheduler al iniciar el servidor
@@ -283,7 +282,33 @@ Se definen en `.env.local`.
 
 ---
 
-## 7. Diseño
+## 7. Deploy en Railway
+
+La app necesita un servidor encendido todo el tiempo (scheduler en proceso, SSE) y un disco persistente para SQLite, por eso se despliega en **Railway** y no en Vercel. `railway.json` ya define build, arranque y healthcheck (`/login`).
+
+1. **New Project → Deploy from GitHub repo** → elegir `briangomez182/monitoreo-web`. Root Directory: dejarlo vacío (raíz).
+2. **Volumen:** en el servicio, *Settings → Volumes → Add Volume* con mount path **`/data`**.
+3. **Variables** (*Variables* del servicio):
+
+   | Variable | Valor |
+   |---|---|
+   | `DATABASE_PATH` | `/data/monitoring.db` |
+   | `ADMIN_USERNAME` | `admin` |
+   | `ADMIN_PASSWORD` | la contraseña del administrador |
+   | `AUTH_SECRET` | uno nuevo de 32+ caracteres (ver sección 2) |
+
+4. **Dominio:** *Settings → Networking → Generate Domain*. El login queda en `https://<dominio>/login`.
+
+Notas:
+
+- `PORT` lo asigna Railway; `npm start` lo usa automáticamente (en local cae a 3001).
+- Mantener **1 réplica**: el scheduler y el stream en vivo viven en memoria del proceso (además, un volumen solo se puede montar en una réplica).
+- Sin el volumen, cada deploy borra la base y vuelve a los 10 sitios de prueba.
+- Node 22 o superior (fijado en `engines` de `package.json`; lo exige `better-sqlite3`).
+
+---
+
+## 8. Diseño
 
 Sistema *099 SUPPLY*: lienzo blanco, un único casi-negro `#101010`, hairlines de 1 px, monoespaciada en mayúsculas con tracking amplio, botones pill, tarjetas de 8 px, cero sombras y cero gradientes. La única licencia cromática es el estado: verde `#1f6f43` (UP) y rojo `#a11212` (DOWN).
 
