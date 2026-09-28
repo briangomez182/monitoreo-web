@@ -32,3 +32,6 @@ logs/
 
 # Versión anterior Java/Docker (no se sube)
 borrarLuego-*
+
+# Capturas y salidas locales de Claude
+Claude outputs/
