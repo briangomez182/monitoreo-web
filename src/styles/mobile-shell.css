@@ -1,0 +1,95 @@
+/* Vista mobile (< 768px): shell. Todo va dentro de @media (max-width: 767px). */
+@media (max-width: 767px) {
+  /* --- Marco general: más denso ------------------------------------------ */
+  .app-shell {
+    padding: 16px 12px 48px;
+  }
+
+  /* --- Barra superior: fila 1 = navegación + indicador; fila 2 = acciones -- */
+  .topnav {
+    gap: 10px 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--color-border-subtle);
+  }
+
+  .topnav__nav {
+    gap: 16px;
+  }
+
+  .topnav__live {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .topnav__live-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    border: 1px solid var(--color-ink);
+    background: transparent;
+  }
+
+  .topnav__live[data-live='true'] .topnav__live-dot {
+    background: var(--color-ink);
+  }
+
+  .topnav__actions {
+    flex-basis: 100%;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .topnav__actions .supply-btn {
+    padding: 6px 12px;
+    font-size: 10px;
+  }
+
+  .topnav__actions .supply-loader {
+    width: 12px;
+    height: 12px;
+    margin-right: auto;
+  }
+
+  .topnav__actions .topnav__refresh {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    font-size: 14px;
+    letter-spacing: 0;
+    line-height: 1;
+  }
+
+  /* --- Resumen del dashboard: número + micro-texto en una sola línea ------ */
+  .dash-summary {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+    margin-top: 16px;
+  }
+
+  .dash-summary__total {
+    font-size: 30px;
+  }
+
+  .dash-summary__alert {
+    color: var(--color-ink);
+  }
+
+  /* --- Encabezados de sección ------------------------------------------- */
+  .section-heading {
+    margin-top: 20px;
+    margin-bottom: 8px;
+  }
+
+  .section-heading .supply-heading {
+    font-size: 16px;
+    letter-spacing: 0.14em;
+  }
+
+  /* --- Login -------------------------------------------------------------- */
+  .login-shell {
+    padding: 24px 16px 48px;
+  }
+}

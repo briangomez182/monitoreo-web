@@ -1,0 +1,34 @@
+# Next.js / Node
+node_modules/
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+
+# Base de datos SQLite local
+data/*.db
+data/*.db-*
+
+# Legado (microservicios Java + SPA Vite), hasta que se eliminen
+target/
+build/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+.mvn/
+dist/
+.vite/
+
+# Entorno / IDE / SO
+.env
+.env.local
+.env*.local
+.idea/
+.vscode/
+*.iml
+.DS_Store
+logs/
+*.log
+
+# Versión anterior Java/Docker (no se sube)
+borrarLuego-*

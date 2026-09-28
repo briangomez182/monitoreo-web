@@ -1,0 +1,436 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   099 SUPPLY — sistema de diseño (ver DESIGN.md)
+   Museo en blanco: un solo casi-negro haciendo todo el trabajo, hairlines de
+   1px, monoespaciada exclusiva, cero sombras, cero gradientes.
+   Única licencia cromática: los dos tonos semánticos de estado, usados solo en
+   el punto y la etiqueta UP/DOWN, tal y como pide el requisito Verde/Rojo.
+--------------------------------------------------------------------------- */
+@theme {
+  --color-canvas-white: #ffffff;
+  --color-ink: #101010;
+  --color-charcoal: #000000;
+  --color-muted-hard: #222222;
+  --color-muted: #555555;
+  --color-muted-soft: #999999;
+  --color-border-soft: #c8c8c8;
+  --color-border-subtle: #e0e0e0;
+  --color-status-up: #1f6f43;
+  --color-status-down: #a11212;
+
+  --font-mono-supply: 'JetBrains Mono', 'Soehne Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --radius-cards: 8px;
+  --radius-inputs: 4px;
+  --radius-buttons: 9999px;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-canvas-white);
+  color: var(--color-ink);
+  font-family: var(--font-mono-supply);
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* --- Primitivas del sistema ---------------------------------------------- */
+
+.supply-heading {
+  font-size: 26px;
+  font-weight: 500;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--color-muted-soft);
+}
+
+.supply-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-muted);
+}
+
+.supply-micro {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-muted-soft);
+}
+
+/* Nombre del sitio: chip sobre casi-negro para maximizar el contraste
+   contra el blanco de la tarjeta. */
+.supply-sitename {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: var(--color-charcoal);
+  color: var(--color-canvas-white);
+  letter-spacing: 0.06em;
+}
+
+.supply-sitename:hover {
+  background: var(--color-ink);
+}
+
+/* Botón de re-chequeo por tarjeta: cuadrado mínimo, mismo lenguaje que ghost. */
+.supply-recheck {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--color-border-soft);
+  border-radius: 4px;
+  background: var(--color-canvas-white);
+  color: var(--color-muted);
+  font-family: inherit;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.12s ease, color 0.12s ease;
+}
+
+.supply-recheck:hover:not(:disabled) {
+  border-color: var(--color-ink);
+  color: var(--color-ink);
+}
+
+.supply-recheck:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Asa de arrastre: mismo cuadrado que el botón de re-chequeo, cursor grab.
+   touch-action: none es imprescindible para arrastrar en pantallas táctiles. */
+.supply-drag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--color-border-soft);
+  border-radius: 4px;
+  background: var(--color-canvas-white);
+  color: var(--color-muted-soft);
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1;
+  cursor: grab;
+  touch-action: none;
+  transition: border-color 0.12s ease, color 0.12s ease;
+}
+
+.supply-drag:hover {
+  border-color: var(--color-ink);
+  color: var(--color-ink);
+}
+
+.supply-drag:active {
+  cursor: grabbing;
+}
+
+.supply-card--dragging {
+  border-color: var(--color-ink);
+  cursor: grabbing;
+}
+
+/* --- Footer con olas de mar -------------------------------------------------
+   Al montar el footer (aparición de la tarjeta o nuevo chequeo: el key remonta
+   .supply-wave) la "marea" sube desde abajo hasta llenar ~60% del footer, con
+   un pequeño vaivén al asentarse. Después, dos capas enmascaradas se desplazan
+   en horizontal a distinta velocidad para el oleaje continuo. El color lo pasa
+   StatusCard en la custom property --wave-color según el estado. */
+.supply-footer {
+  position: relative;
+  overflow: hidden;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+.supply-footer__fg {
+  position: relative;
+  z-index: 1;
+}
+
+.supply-wave {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  transform: translateY(101%);
+  /* El nivel del agua lo fija StatusCard con transform inline: es la cuenta
+     atrás hasta el próximo chequeo. Aquí solo suavizamos cada salto de 1 s. */
+  transition: transform 1.1s cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.supply-wave__layer {
+  position: absolute;
+  left: -110%;
+  right: -110%;
+  top: 0;
+  bottom: -24px;
+  background-color: var(--wave-color, var(--color-border-soft));
+  -webkit-mask-repeat: repeat-x;
+  mask-repeat: repeat-x;
+  -webkit-mask-position: top left;
+  mask-position: top left;
+  -webkit-mask-size: 220px 100%;
+  mask-size: 220px 100%;
+  will-change: transform;
+}
+
+.supply-wave__layer--back {
+  opacity: 0.24;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='100' preserveAspectRatio='none' viewBox='0 0 220 100'%3E%3Cpath d='M0 16 C 27 6 46 6 73 16 C 100 26 119 26 146 16 C 173 6 192 6 220 16 L220 100 L0 100 Z' fill='%23000'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='100' preserveAspectRatio='none' viewBox='0 0 220 100'%3E%3Cpath d='M0 16 C 27 6 46 6 73 16 C 100 26 119 26 146 16 C 173 6 192 6 220 16 L220 100 L0 100 Z' fill='%23000'/%3E%3C/svg%3E");
+  animation: supply-wave-drift 9s linear infinite;
+}
+
+.supply-wave__layer--front {
+  opacity: 0.42;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='100' preserveAspectRatio='none' viewBox='0 0 220 100'%3E%3Cpath d='M0 13 C 18 25 40 25 60 13 C 80 1 102 1 122 13 C 142 25 164 25 184 13 C 200 4 212 4 220 13 L220 100 L0 100 Z' fill='%23000'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='100' preserveAspectRatio='none' viewBox='0 0 220 100'%3E%3Cpath d='M0 13 C 18 25 40 25 60 13 C 80 1 102 1 122 13 C 142 25 164 25 184 13 C 200 4 212 4 220 13 L220 100 L0 100 Z' fill='%23000'/%3E%3C/svg%3E");
+  animation: supply-wave-drift 5.5s linear infinite reverse;
+}
+
+@keyframes supply-wave-drift {
+  from { transform: translateX(0); }
+  to   { transform: translateX(220px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .supply-wave {
+    display: none;
+  }
+}
+
+.supply-card {
+  background: var(--color-canvas-white);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 8px;
+  transition: border-color 0.12s ease, transform 0.12s ease;
+}
+
+.supply-card:hover {
+  border-color: var(--color-muted-soft);
+}
+
+/* Entrada escalonada: cada tarjeta aparece un instante después de la anterior
+   (el retardo lo fija StatusCard con animation-delay según su índice). */
+@keyframes supply-card-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.supply-card--enter {
+  opacity: 0;
+  animation: supply-card-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .supply-card--enter {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+/* La tabla del catálogo entra al montarse: fade + leve deslizamiento. */
+@keyframes supply-table-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.supply-table-in {
+  animation: supply-table-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Filas en cascada al aparecer la tabla; useInView() vuelve a lanzar la
+   animación cada vez que la fila reentra en el viewport al scrollear. */
+@keyframes supply-row-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.supply-reveal {
+  opacity: 0;
+}
+
+.supply-reveal.is-in {
+  animation: supply-row-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .supply-table-in,
+  .supply-reveal,
+  .supply-reveal.is-in {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Modal de alta/edición: aparición lenta y deliberada (2s), cierre ágil (0.32s).
+   Se usa animación por keyframes (no transición) para que se dispare siempre
+   al montar el nodo, igual que .supply-card--enter. */
+@keyframes supply-modal-overlay-in {
+  from { background: rgba(34, 34, 34, 0); }
+  to   { background: rgba(34, 34, 34, 0.35); }
+}
+
+@keyframes supply-modal-overlay-out {
+  from { background: rgba(34, 34, 34, 0.35); }
+  to   { background: rgba(34, 34, 34, 0); }
+}
+
+@keyframes supply-modal-panel-in {
+  from { opacity: 0; transform: translateY(24px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes supply-modal-panel-out {
+  from { opacity: 1; transform: none; }
+  to   { opacity: 0; transform: translateY(24px) scale(0.98); }
+}
+
+.supply-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 50;
+  background: rgba(34, 34, 34, 0.35);
+}
+
+.supply-modal--enter {
+  animation: supply-modal-overlay-in 2s ease both;
+}
+
+.supply-modal--leave {
+  pointer-events: none;
+  animation: supply-modal-overlay-out 0.32s ease both;
+}
+
+.supply-modal__panel {
+  width: min(520px, 100%);
+  padding: 16px;
+}
+
+.supply-modal__panel--enter {
+  animation: supply-modal-panel-in 1s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.supply-modal__panel--leave {
+  animation: supply-modal-panel-out 0.32s ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .supply-modal--enter,
+  .supply-modal--leave,
+  .supply-modal__panel--enter,
+  .supply-modal__panel--leave {
+    animation: none;
+  }
+}
+
+.supply-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 9999px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease, opacity 0.12s ease;
+}
+
+.supply-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.supply-btn--primary {
+  background: var(--color-ink);
+  color: var(--color-canvas-white);
+  border: 1px solid var(--color-ink);
+}
+
+.supply-btn--primary:hover:not(:disabled) {
+  background: var(--color-muted-soft);
+  border-color: var(--color-muted-soft);
+}
+
+.supply-btn--ghost {
+  background: transparent;
+  color: var(--color-muted);
+  border: 1px solid var(--color-muted-soft);
+}
+
+.supply-btn--ghost:hover:not(:disabled) {
+  border-color: var(--color-ink);
+  color: var(--color-ink);
+}
+
+.supply-input {
+  width: 100%;
+  padding: 8px 10px;
+  background: var(--color-canvas-white);
+  border: 1px solid var(--color-border-soft);
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--color-ink);
+  transition: border-color 0.12s ease;
+}
+
+.supply-input:focus {
+  outline: none;
+  border-color: var(--color-ink);
+}
+
+/* Rejilla de museo: fila tras fila de objetos idénticos sobre blanco. */
+.supply-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+@media (min-width: 640px)  { .supply-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1024px) { .supply-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 1440px) { .supply-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+
+/* Anillo de carga: único elemento con movimiento continuo del sistema. */
+@keyframes supply-spin {
+  to { transform: rotate(360deg); }
+}
+
+.supply-loader {
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  border: 2px solid var(--color-border-subtle);
+  border-top-color: var(--color-ink);
+  animation: supply-spin 0.9s linear infinite;
+}

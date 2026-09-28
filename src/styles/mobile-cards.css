@@ -1,0 +1,137 @@
+/* Vista mobile (< 768px): cards. Todo lo mobile va dentro de @media (max-width: 767px). */
+
+/* Estilos base de la tarjeta movidos desde el JSX inline para que el media
+   query pueda pisarlos. En desktop valen exactamente lo mismo que antes. */
+.supply-card__code {
+  font-size: 54px;
+  line-height: 1;
+  letter-spacing: 0.025em;
+  font-variant-numeric: tabular-nums;
+}
+
+.supply-card__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 70%;
+}
+
+@media (max-width: 767px) {
+  /* Lista de filas compactas: una columna en teléfono (2 desde 640px, como
+     ya define la rejilla base), con menos aire entre tarjetas. */
+  .supply-grid {
+    gap: 8px;
+  }
+
+  /* La tarjeta pasa a ser una fila de dos líneas en rejilla:
+       ⠿  ● NOMBRE ········· 200   ⟳
+       ⠿  123 MS ···· HACE 0:12    ⟳
+     header / cuerpo / footer se "disuelven" (display: contents) para que sus
+     hijos se coloquen directamente en la rejilla de la tarjeta. */
+  .status-card {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr) auto auto;
+    grid-template-rows: auto auto;
+    column-gap: 8px;
+    row-gap: 4px;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+    padding: 8px 8px 8px 4px;
+  }
+
+  .status-card .supply-card__head,
+  .status-card .supply-card__group,
+  .status-card .supply-card__body,
+  .status-card .supply-footer {
+    display: contents;
+  }
+
+  /* Fuera en mobile: etiqueta "HTTP ESTATUS", frase del estatus, texto de
+     error y la etiqueta de texto de la marca (queda solo el punto). */
+  .status-card .supply-card__code-label,
+  .status-card .supply-card__phrase,
+  .status-card .supply-card__error,
+  .status-card .status-mark__label {
+    display: none;
+  }
+
+  /* Todo el contenido por encima de la marea. */
+  .status-card .supply-drag,
+  .status-card .status-mark,
+  .status-card .supply-card__name,
+  .status-card .supply-card__code,
+  .status-card .supply-card__latency,
+  .status-card .supply-card__ago,
+  .status-card .supply-recheck {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Asa discreta: sin marco, estrecha, ocupa las dos líneas (área táctil alta). */
+  .status-card .supply-drag {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    width: 18px;
+    height: 36px;
+    border-color: transparent;
+    background: transparent;
+    font-size: 13px;
+  }
+
+  .status-card .status-mark {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .status-card .supply-card__name {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: start;
+    max-width: 100%;
+    padding: 3px 6px;
+    font-size: 11px;
+  }
+
+  .status-card .supply-card__code {
+    grid-column: 4;
+    grid-row: 1;
+    justify-self: end;
+    font-size: 18px;
+    letter-spacing: 0.02em;
+  }
+
+  .status-card .supply-card__latency {
+    grid-column: 2 / span 2;
+    grid-row: 2;
+    justify-self: start;
+    margin-top: 0;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .status-card .supply-card__ago {
+    grid-column: 4;
+    grid-row: 2;
+    justify-self: end;
+    white-space: nowrap;
+  }
+
+  .status-card .supply-recheck {
+    grid-column: 5;
+    grid-row: 1 / span 2;
+    width: 30px;
+    height: 30px;
+    font-size: 16px;
+  }
+
+  /* La marea deja de vivir en el footer y ocupa el fondo de toda la fila,
+     más tenue para no competir con el texto. Mismo significado: el nivel sube
+     conforme se acerca el próximo chequeo. */
+  .status-card .supply-wave__layer--back {
+    opacity: 0.1;
+  }
+
+  .status-card .supply-wave__layer--front {
+    opacity: 0.18;
+  }
+}
