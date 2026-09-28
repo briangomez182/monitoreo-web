@@ -24,21 +24,21 @@ Requisitos: Node.js 22 o superior.
 
 ```bash
 npm install
-npm run dev          # desarrollo → http://localhost:3001
+npm run dev          # desarrollo → http://localhost:3100
 ```
 
 Producción:
 
 ```bash
 npm run build
-npm start            # → http://localhost:3001
+npm start            # → http://localhost:3100
 ```
 
 | Script | Qué hace |
 |---|---|
-| `npm run dev` | Servidor de desarrollo en el puerto 3001 |
+| `npm run dev` | Servidor de desarrollo en el puerto 3100 |
 | `npm run build` | Compila para producción |
-| `npm start` | Levanta la versión compilada en el puerto 3001 |
+| `npm start` | Levanta la versión compilada en el puerto 3100 |
 | `npm run lint` | ESLint |
 
 El puerto se cambia en `package.json` (flag `-p` de los scripts `dev` y `start`).
@@ -53,7 +53,7 @@ Solo existe **un usuario: el administrador**. No hay registro ni forma de crear 
 
 | Dato | Valor |
 |---|---|
-| URL de acceso | http://localhost:3001/login |
+| URL de acceso | http://localhost:3100/login |
 | Usuario | `admin` |
 | Contraseña | La que figura en `ADMIN_PASSWORD` dentro de `.env.local` |
 
@@ -159,12 +159,14 @@ monitoreo-web/
 ├── .env.example                # plantilla de .env.local
 ├── data/
 │   └── monitoring.db           # base de datos SQLite (NO se sube)
-├── package.json                # dependencias y scripts (puerto 3001)
+├── package.json                # dependencias y scripts (puerto 3100)
 ├── next.config.ts              # configuración de Next
 ├── tsconfig.json
 ├── eslint.config.mjs
 ├── postcss.config.mjs          # Tailwind v4
 ├── public/                     # archivos estáticos
+├── scripts/
+│   └── servicio.sh             # servicio 24/7 (launchd) + Cloudflare Tunnel
 └── src/
     ├── proxy.ts                # guardia de sesión: todo cerrado salvo /login
     ├── instrumentation.ts      # arranca el scheduler al iniciar el servidor
@@ -282,29 +284,42 @@ Se definen en `.env.local`.
 
 ---
 
-## 7. Deploy en Railway
+## 7. Servicio 24/7 en esta Mac + Cloudflare Tunnel
 
-La app necesita un servidor encendido todo el tiempo (scheduler en proceso, SSE) y un disco persistente para SQLite, por eso se despliega en **Railway** y no en Vercel. `railway.json` ya define build, arranque y healthcheck (`/login`).
+La app corre siempre en segundo plano en esta computadora (launchd de macOS) y se puede abrir desde cualquier lugar con una URL pública de **Cloudflare Tunnel**. Todo gratis y sin cambios en el código.
 
-1. **New Project → Deploy from GitHub repo** → elegir `briangomez182/monitoreo-web`. Root Directory: dejarlo vacío (raíz).
-2. **Volumen:** en el servicio, *Settings → Volumes → Add Volume* con mount path **`/data`**.
-3. **Variables** (*Variables* del servicio):
+Son dos servicios que arrancan solos al iniciar sesión y se reinician si se caen:
 
-   | Variable | Valor |
-   |---|---|
-   | `DATABASE_PATH` | `/data/monitoring.db` |
-   | `ADMIN_USERNAME` | `admin` |
-   | `ADMIN_PASSWORD` | la contraseña del administrador |
-   | `AUTH_SECRET` | uno nuevo de 32+ caracteres (ver sección 2) |
+| Servicio | Qué hace |
+|---|---|
+| `com.brian.monitoreo-web` | `next start` en `127.0.0.1:3100` (solo localhost) |
+| `com.brian.monitoreo-web.tunnel` | `cloudflared` → URL pública `https://….trycloudflare.com` hacia la app |
 
-4. **Dominio:** *Settings → Networking → Generate Domain*. El login queda en `https://<dominio>/login`.
+### Comandos
 
-Notas:
+| Comando | Qué hace |
+|---|---|
+| `npm run servicio:instalar` | Compila e instala/reinstala ambos servicios |
+| `npm run servicio:reiniciar` | Recompila y reinicia la app (**después de cambiar código**) |
+| `npm run servicio:estado` | Muestra si están corriendo y la URL pública |
+| `npm run servicio:url` | Imprime la URL pública del login |
+| `npm run servicio:logs` | Sigue el log de la app |
+| `npm run servicio:detener` | Los detiene hasta el próximo inicio de sesión |
+| `npm run servicio:desinstalar` | Los quita por completo |
 
-- `PORT` lo asigna Railway; `npm start` lo usa automáticamente (en local cae a 3001).
-- Mantener **1 réplica**: el scheduler y el stream en vivo viven en memoria del proceso (además, un volumen solo se puede montar en una réplica).
-- Sin el volumen, cada deploy borra la base y vuelve a los 10 sitios de prueba.
-- Node 22 o superior (fijado en `engines` de `package.json`; lo exige `better-sqlite3`).
+Requisitos: `brew install cloudflared` y `.env.local` con las credenciales. Los archivos de servicio se generan en `~/Library/LaunchAgents/` y los logs quedan en `~/Library/Logs/monitoreo-web/` (`app.log`, `tunnel.log`). Todo lo maneja `scripts/servicio.sh`.
+
+### A tener en cuenta
+
+- **La URL pública cambia** cada vez que se reinicia el túnel (reinicio de la Mac, cierre de sesión, `servicio:instalar`). Consultarla con `npm run servicio:url`. Para una URL fija hace falta un dominio propio en Cloudflare y un *named tunnel*.
+- **Reposo:** si la Mac se suspende, la app se pausa y no chequea. Para evitarlo: *Ajustes → Batería / Energía → Evitar el reposo automático cuando la pantalla está apagada* (con el cargador conectado).
+- **Solo con sesión iniciada:** arranca al iniciar sesión, no en la pantalla de login de macOS.
+- **Stream en vivo:** los túneles rápidos de Cloudflare no soportan SSE, así que por la URL pública el dashboard se actualiza por sondeo cada 15 s. En `http://localhost:3100` sigue en vivo.
+- **Seguridad:** la app solo escucha en `127.0.0.1`; desde afuera se entra únicamente por el túnel (HTTPS) y con el login. La cookie de sesión va con `Secure` cuando la petición llega por HTTPS.
+- **No correr `npm run dev` a la vez:** usarían la misma base y se duplicarían los chequeos. Para desarrollar: `npm run servicio:detener`, trabajar con `npm run dev` y al terminar `npm run servicio:instalar`.
+- Usa `data/monitoring.db`, la misma base de siempre.
+
+> `railway.json` queda como alternativa si en algún momento se despliega en Railway (servicio pago): volumen en `/data`, `DATABASE_PATH=/data/monitoring.db` y las variables de la sección 2.
 
 ---
 

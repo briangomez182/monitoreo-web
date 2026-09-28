@@ -21,10 +21,12 @@ type Attempts = Map<string, { count: number; firstAt: number }>;
 const g = globalThis as typeof globalThis & { __loginAttempts?: Attempts };
 const attempts: Attempts = (g.__loginAttempts ??= new Map());
 
-// Detrás del proxy de Railway, X-Real-IP la pone el proxy. El primer valor de
-// X-Forwarded-For lo controla el cliente, así que se usa el último (el que agregó el proxy).
+// Detrás de Cloudflare Tunnel la IP real llega en CF-Connecting-IP (la pone
+// Cloudflare). El servidor solo escucha en 127.0.0.1, así que nadie más puede
+// inyectar estos headers. El primer valor de X-Forwarded-For lo controla el
+// cliente, por eso como último recurso se usa el último (el que agregó el proxy).
 function clientIp(request: Request): string {
-  const realIp = request.headers.get('x-real-ip')?.trim();
+  const realIp = (request.headers.get('cf-connecting-ip') ?? request.headers.get('x-real-ip'))?.trim();
   if (realIp) return realIp;
   const forwarded = request.headers.get('x-forwarded-for')?.split(',').map((ip) => ip.trim()).filter(Boolean);
   return forwarded?.at(-1) || 'local';
@@ -71,6 +73,6 @@ export async function POST(request: Request) {
 
   attempts.delete(ip);
   const response = new NextResponse(null, { status: 204 });
-  response.cookies.set(SESSION_COOKIE, await createSessionToken(username), sessionCookieOptions(SESSION_TTL_SECONDS));
+  response.cookies.set(SESSION_COOKIE, await createSessionToken(username), sessionCookieOptions(request, SESSION_TTL_SECONDS));
   return response;
 }

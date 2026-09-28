@@ -40,6 +40,7 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Todo menos los assets estáticos de Next y el favicon.
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  // Todo menos los assets estáticos de Next, los íconos y el manifest
+  // (el navegador los pide también desde /login, sin sesión).
+  matcher: ['/((?!_next/static|_next/image|favicon\\.ico|icon\\.png|apple-icon\\.png|icon-192\\.png|icon-512\\.png|manifest\\.webmanifest).*)'],
 };

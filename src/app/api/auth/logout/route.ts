@@ -5,8 +5,8 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 /** POST /api/auth/logout -> 204 y borra la cookie de sesión. */
-export async function POST() {
+export async function POST(request: Request) {
   const response = new NextResponse(null, { status: 204 });
-  response.cookies.set(SESSION_COOKIE, '', sessionCookieOptions(0));
+  response.cookies.set(SESSION_COOKIE, '', sessionCookieOptions(request, 0));
   return response;
 }

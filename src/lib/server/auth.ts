@@ -113,12 +113,19 @@ export async function verifySessionToken(token: string | undefined | null): Prom
   }
 }
 
+function isHttps(request: Request): boolean {
+  const proto = request.headers.get('x-forwarded-proto')?.split(',')[0].trim();
+  return proto ? proto === 'https' : new URL(request.url).protocol === 'https:';
+}
+
 /** Opciones comunes de la cookie de sesión. */
-export function sessionCookieOptions(maxAge: number) {
+export function sessionCookieOptions(request: Request, maxAge: number) {
   return {
     httpOnly: true,
     sameSite: 'lax' as const,
-    secure: process.env.NODE_ENV === 'production',
+    // Secure solo si la petición llegó por HTTPS (Cloudflare Tunnel manda
+    // X-Forwarded-Proto: https). En http://localhost el navegador la descartaría.
+    secure: isHttps(request),
     path: '/',
     maxAge,
   };
